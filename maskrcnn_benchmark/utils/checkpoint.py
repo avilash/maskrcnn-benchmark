@@ -61,12 +61,15 @@ class Checkpointer(object):
         checkpoint = self._load_file(f)
         self._load_model(checkpoint)
         if "optimizer" in checkpoint and self.optimizer:
-            self.logger.info("Loading optimizer from {}".format(f))
-            self.optimizer.load_state_dict(checkpoint.pop("optimizer"))
+            checkpoint.pop("optimizer")
+            # self.logger.info("Loading optimizer from {}".format(f))
+            # self.optimizer.load_state_dict(checkpoint.pop("optimizer"))
         if "scheduler" in checkpoint and self.scheduler:
-            self.logger.info("Loading scheduler from {}".format(f))
-            self.scheduler.load_state_dict(checkpoint.pop("scheduler"))
-
+            checkpoint.pop("scheduler")
+            # self.logger.info("Loading scheduler from {}".format(f))
+            # self.scheduler.load_state_dict(checkpoint.pop("scheduler"))
+        if "iteration" in checkpoint:
+            checkpoint.pop("iteration")
         # return any further checkpoint data
         return checkpoint
 
@@ -94,7 +97,7 @@ class Checkpointer(object):
         return torch.load(f, map_location=torch.device("cpu"))
 
     def _load_model(self, checkpoint):
-        load_state_dict(self.model, checkpoint.pop("model"))
+        load_state_dict(self.model, checkpoint.pop("model"), ignore_roi_head_weights=self.cfg.MODEL.ROI_BOX_HEAD.IGNORE_WEIGHTS)
 
 
 class DetectronCheckpointer(Checkpointer):

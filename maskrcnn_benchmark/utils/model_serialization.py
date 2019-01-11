@@ -68,13 +68,20 @@ def strip_prefix_if_present(state_dict, prefix):
     return stripped_state_dict
 
 
-def load_state_dict(model, loaded_state_dict):
+def load_state_dict(model, loaded_state_dict, ignore_roi_head_weights=False):
     model_state_dict = model.state_dict()
     # if the state_dict comes from a model that was wrapped in a
     # DataParallel or DistributedDataParallel during serialization,
     # remove the "module" prefix before performing the matching
     loaded_state_dict = strip_prefix_if_present(loaded_state_dict, prefix="module.")
-    align_and_update_state_dicts(model_state_dict, loaded_state_dict)
+    if ignore_roi_head_weights:
+        filtered_state_dict = {}
+        for k,v in loaded_state_dict.items():
+            if ('cls_score' not in k) and ('bbox_pred' not in k) and ('mask_fcn_logits' not in k):
+                filtered_state_dict[k] = v
+        align_and_update_state_dicts(model_state_dict, filtered_state_dict)
+    else:
+        align_and_update_state_dicts(model_state_dict, loaded_state_dict)
 
     # use strict loading
     model.load_state_dict(model_state_dict)

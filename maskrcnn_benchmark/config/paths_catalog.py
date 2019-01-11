@@ -5,7 +5,7 @@ import os
 
 
 class DatasetCatalog(object):
-    DATA_DIR = "datasets"
+    DATA_DIR = "/home/pickpal/Work/HDD/Dataset/"
 
     DATASETS = {
         "coco_2014_train": (
@@ -21,16 +21,29 @@ class DatasetCatalog(object):
             "coco/val2014",
             "coco/annotations/instances_valminusminival2014.json",
         ),
+        "dexf_train": ("150OBJ/Test/RPN/JPEGImages", "150OBJ/Test/RPN/instances_train2014.json"),
+        "dexf_val"  : ("150OBJ/Test/RPN/JPEGImages", "150OBJ/Test/RPN/instances_val2014.json"),
     }
 
     @staticmethod
     def get(name):
-        if "coco" in name:
+        if ("coco" in name) or ('dexf' in name):
             data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(
                 root=os.path.join(data_dir, attrs[0]),
                 ann_file=os.path.join(data_dir, attrs[1]),
+            )
+            return dict(
+                factory="COCODataset",
+                args=args,
+            )
+        elif "pickpal" in name:
+            dir_name = name.split("_", 1)[1]
+            data_dir = os.path.join("/home/pickpal/Work/Vision/GORBB/dexf_server/data/training_data", dir_name)
+            args = dict(
+                root=os.path.join(data_dir, "JPEGImages"),
+                ann_file=os.path.join(data_dir, "instances_train2014.json"),
             )
             return dict(
                 factory="COCODataset",
