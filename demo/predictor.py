@@ -179,6 +179,33 @@ class COCODemo(object):
 
         return result
 
+    def run_on_opencv_image2(self, image):
+        """
+        Arguments:
+            image (np.ndarray): an image as returned by OpenCV
+
+        Returns:
+            prediction (BoxList): the detected objects. Additional information
+                of the detection properties can be found in the fields of
+                the BoxList via `prediction.fields()`
+        """
+        predictions = self.compute_prediction(image)
+        top_predictions = self.select_top_predictions(predictions)
+
+        boxes = predictions.bbox
+        masks = predictions.get_field("mask").numpy()
+        labels = predictions.get_field("labels")
+
+        result = image.copy()
+        if self.show_mask_heatmaps:
+            return self.create_mask_montage(result, top_predictions)
+        result = self.overlay_boxes(result, top_predictions)
+        if self.cfg.MODEL.MASK_ON:
+            result = self.overlay_mask(result, top_predictions)
+        result = self.overlay_class_names(result, top_predictions)
+
+        return result, boxes, masks, labels
+
     def compute_prediction(self, original_image):
         """
         Arguments:
@@ -284,7 +311,7 @@ class COCODemo(object):
 
         for mask, color in zip(masks, colors):
             thresh = mask[0, :, :, None]
-            _, contours, hierarchy = cv2.findContours(
+            contours, hierarchy = cv2.findContours(
                 thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
             )
             image = cv2.drawContours(image, contours, -1, color, 3)

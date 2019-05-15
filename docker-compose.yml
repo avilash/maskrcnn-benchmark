@@ -1,0 +1,11 @@
+version: '3.7'
+services:
+  app:
+    container_name: app 
+    restart: always
+    build: .
+    ports:
+      - 9494:9494
+    volumes:
+      - <path to model>:/maskrcnn-benchmark/demo/model.pth
+    command: bash -c "cd demo && python obj_seg.py --config_file docker.yaml"
