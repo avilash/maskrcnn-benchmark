@@ -7,5 +7,5 @@ services:
     ports:
       - 9494:9494
     volumes:
-      - <path to model>:/maskrcnn-benchmark/demo/model.pth
+      - ${MODEL_PATH}:/app/demo/model.pth
     command: bash -c "cd demo && python obj_seg.py --config_file docker.yaml"

@@ -1,10 +1,14 @@
-FROM nvidia/cuda:10.0-devel-ubuntu16.04
-ENV DEBIAN_FRONTEND=noninteractive
+ARG CUDA="10.0"
+ARG CUDNN="7"
 
-WORKDIR /maskrcnn-benchmark
+FROM nvidia/cuda:${CUDA}-cudnn${CUDNN}-devel-ubuntu16.04
 
-RUN apt-get update
-RUN apt-get install -y libgtk2.0-dev
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+# install basics
+RUN apt-get update -y \
+ && apt-get install -y apt-utils git curl ca-certificates bzip2 cmake tree htop bmon iotop g++ \
+ && apt-get install -y libglib2.0-0 libsm6 libxext6 libxrender-dev
 
 # Install Miniconda
 RUN curl -so /miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
@@ -15,7 +19,7 @@ RUN curl -so /miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest
 ENV PATH=/miniconda/bin:$PATH
 
 # Create a Python 3.6 environment
-RUN /miniconda/bin/conda install conda-build \
+RUN /miniconda/bin/conda install -y conda-build \
  && /miniconda/bin/conda create -y --name py36 python=3.6.7 \
  && /miniconda/bin/conda clean -ya
 
@@ -24,17 +28,32 @@ ENV CONDA_PREFIX=/miniconda/envs/$CONDA_DEFAULT_ENV
 ENV PATH=$CONDA_PREFIX/bin:$PATH
 ENV CONDA_AUTO_UPDATE_CONDA=false
 
-# Install Dependencies
-RUN pip install torch==1.0.0 -f https://download.pytorch.org/whl/cu100/stable
-RUN pip install torchvision
+# Install Torch
+RUN conda install pytorch cudatoolkit=${CUDA} -c pytorch \
+ && conda clean -ya
 
-ADD requirements.txt /maskrcnn-benchmark/
+# Install TorchVision
+RUN git clone https://github.com/pytorch/vision.git \
+ && cd vision \
+ && python setup.py install
+
+# Install apex
+RUN git clone https://github.com/NVIDIA/apex.git \
+ && cd apex \
+ && python setup.py install --cuda_ext --cpp_ext
+
+WORKDIR /app
+
+# Install Requirements
+ADD requirements.txt /app/
 RUN pip install -r requirements.txt
 RUN pip install pycocotools
 
 # Build Mask RCNN
-ADD . /maskrcnn-benchmark
+ARG FORCE_CUDA="1"
+ENV FORCE_CUDA=${FORCE_CUDA}
+ADD . /app
 RUN rm -rf build
 RUN python setup.py build develop
 
-WORKDIR /maskrcnn-benchmark
+WORKDIR /app

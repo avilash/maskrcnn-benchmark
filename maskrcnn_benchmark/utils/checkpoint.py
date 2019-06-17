@@ -49,8 +49,8 @@ class Checkpointer(object):
         torch.save(data, save_file)
         self.tag_last_checkpoint(save_file)
 
-    def load(self, f=None):
-        if self.has_checkpoint():
+    def load(self, f=None, use_latest=True):
+        if self.has_checkpoint() and use_latest:
             # override argument with existing checkpoint
             f = self.get_checkpoint_file()
         if not f:
@@ -82,6 +82,7 @@ class Checkpointer(object):
         try:
             with open(save_file, "r") as f:
                 last_saved = f.read()
+                last_saved = last_saved.strip()
         except IOError:
             # if file doesn't exist, maybe because it has just been
             # deleted by a separate process

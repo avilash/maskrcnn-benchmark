@@ -4,3 +4,5 @@ cython
 matplotlib
 opencv-python
 flask
+yacs
+tqdm
